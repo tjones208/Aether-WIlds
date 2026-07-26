@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background: #0b1220;
+  color: #e8eefb;
+  overscroll-behavior: none;
+}
+
+/* Thin, unobtrusive scrollbars inside scrolling panels */
+.scroll-thin::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: #243350;
+  border-radius: 8px;
+}
