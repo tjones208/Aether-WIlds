@@ -74,7 +74,7 @@ export const PLACES: Place[] = [
     kind: "town",
     pos: { x: 9, y: 13 },
     regionIndex: 0,
-    npcs: ["merchant", "innkeeper", "hunter"],
+    npcs: ["merchant", "innkeeper", "hunter", "elowen"],
     intro: "The bells of Rivenholde, last free town of the southern meadow.",
   },
   {
@@ -83,7 +83,7 @@ export const PLACES: Place[] = [
     kind: "castle",
     pos: { x: 5, y: 13 },
     regionIndex: 0,
-    npcs: ["king", "sage"],
+    npcs: ["king", "sage", "garrick"],
     intro: "Banners hang low over Castle Aurelis. The court is uneasy.",
   },
   {
@@ -92,7 +92,7 @@ export const PLACES: Place[] = [
     kind: "town",
     pos: { x: 12, y: 5 },
     regionIndex: 1,
-    npcs: ["smith", "wanderer"],
+    npcs: ["smith", "wanderer", "kestrel"],
     intro: "Emberton clings to the edge of the Ashen Hollow, smoke on the wind.",
   },
   {
@@ -196,6 +196,42 @@ export const NPCS: Record<string, Npc> = {
       "I climbed the Frostspire once. I came back with white hair and one truth:",
       "Pyraxis the Everburning does not sleep. It waits.",
     ],
+  },
+  // ---- Recruitable companions ----
+  elowen: {
+    id: "elowen",
+    name: "Sister Elowen",
+    sprite: "🧝‍♀️",
+    place: "rivenholde",
+    lines: [
+      "You carry the Aether's mark. I have prayed for its bearer to come.",
+      "The Wardens were guardians once, before the falling star turned them.",
+    ],
+    recruit: "elowen",
+  },
+  garrick: {
+    id: "garrick",
+    name: "Sir Garrick",
+    sprite: "🧔",
+    place: "aurelis",
+    lines: [
+      "The garrison broke against the Slime King. I did not.",
+      "Free the meadow and I will follow you into the Hollow and beyond.",
+    ],
+    recruit: "garrick",
+    recruitReqBoss: "boss_grumble",
+  },
+  kestrel: {
+    id: "kestrel",
+    name: "Kestrel",
+    sprite: "🏹",
+    place: "emberton",
+    lines: [
+      "Stranger with a glowing arm. You'll be going north, then.",
+      "Nobody crosses the Hollow without a ranger. Lucky for you, I'm the best.",
+    ],
+    recruit: "kestrel",
+    recruitReqBoss: "boss_grumble",
   },
 };
 

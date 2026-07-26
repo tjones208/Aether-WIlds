@@ -99,6 +99,8 @@ export type Npc = {
   place: string; // place id where they stand
   lines: string[]; // idle chatter
   questId?: string; // quest this npc gives / turns in
+  recruit?: string; // companion id this npc lets you recruit
+  recruitReqBoss?: string; // companion only joinable after this boss falls
 };
 
 // ---- Quests -----------------------------------------------------------------
@@ -136,21 +138,52 @@ export type QuestProgress = {
   counts: number[]; // per-objective progress (used for kill objectives)
 };
 
-// ---- Player -----------------------------------------------------------------
+// ---- Characters & party -----------------------------------------------------
 
-export type Player = {
+// One playable hero or companion. The party holds up to four of these.
+export type Character = {
+  id: string; // "hero" for the created lead, otherwise a companion id
   name: string;
   classId: ClassId;
+  sprite: string; // emoji portrait
   level: number;
   xp: number;
   xpToNext: number;
   hp: number;
   mp: number;
   stats: Stats;
-  gold: number; // displayed as "Gil"
   skills: string[]; // learned skill ids
-  inventory: Record<ItemId, number>;
   statuses: StatusEffect[];
+};
+
+export const MAX_PARTY = 4;
+
+// A recruitable companion template.
+export type Companion = {
+  id: string;
+  name: string;
+  classId: ClassId;
+  sprite: string;
+  role: string; // short descriptor, e.g. "Cleric"
+  joinText: string; // what they say on joining
+};
+
+// ---- Story ------------------------------------------------------------------
+
+export type Chapter = {
+  id: string;
+  num: number;
+  title: string;
+  synopsis: string; // narrative flavor for the journal
+  objective: string; // what to do now
+};
+
+// ---- Player (the save root: a party plus shared world state) -----------------
+
+export type Player = {
+  party: Character[]; // 1..MAX_PARTY, party[0] is the created lead
+  gold: number; // displayed as "Gil"
+  inventory: Record<ItemId, number>;
   battlesWon: number;
   // World state
   pos: WorldPos;
@@ -158,6 +191,7 @@ export type Player = {
   bosses: string[]; // defeated boss ids
   talkedNpcs: string[];
   visitedPlaces: string[];
+  recruited: string[]; // companion ids that have joined
   steps: number;
 };
 
@@ -168,6 +202,8 @@ export type Screen =
   | "town"
   | "battle"
   | "quests"
+  | "party"
+  | "journal"
   | "victory"
   | "defeat";
 
@@ -175,12 +211,11 @@ export type BattleState = {
   enemy: Enemy;
   zoneIndex: number;
   isBoss: boolean;
-  turn: "player" | "enemy" | "over";
+  queue: string[]; // turn order for this round; queue[0] is the active actor id
+  round: number;
   log: string[];
-  playerDefending: boolean;
   rewardXp: number;
   rewardGold: number;
   outcome: "win" | "lose" | null;
-  // Where to return after the battle resolves.
   returnTo: "world" | "town";
 };

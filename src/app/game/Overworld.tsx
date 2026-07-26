@@ -34,13 +34,13 @@ type Step = { dx: number; dy: number; progress: number; tx: number; ty: number }
 export default function Overworld({
   player,
   onArrive,
-  onOpenQuests,
   onOpenMenu,
+  onOpenPack,
 }: {
   player: Player;
   onArrive: (x: number, y: number) => boolean; // returns true if it halted movement
-  onOpenQuests: () => void;
   onOpenMenu: () => void;
+  onOpenPack: () => void;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -55,7 +55,8 @@ export default function Overworld({
   const onArriveRef = useRef(onArrive);
   onArriveRef.current = onArrive;
 
-  const tunic = TUNIC[player.classId] ?? "#c0453b";
+  const hero = player.party[0];
+  const tunic = TUNIC[hero.classId] ?? "#c0453b";
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -275,13 +276,13 @@ export default function Overworld({
         <div>
           <div className="text-lg font-bold">{ZONES[regionForPos(player.pos)].name}</div>
           <div className="text-[11px] text-muted">
-            {CLASSES[player.classId].name} · Lv {player.level} · step {player.steps}
+            {CLASSES[hero.classId].name} · Lv {hero.level} · party {player.party.length}/4 · step {player.steps}
           </div>
         </div>
         <div className="flex items-center gap-2 text-xs text-muted">
           <span>🪙 {player.gold}</span>
           <span>
-            ❤️ {Math.round(player.hp)}/{player.stats.maxHp}
+            ❤️ {Math.round(hero.hp)}/{hero.stats.maxHp}
           </span>
         </div>
       </div>
@@ -299,10 +300,10 @@ export default function Overworld({
           }}
         />
         <div className="flex flex-col gap-2">
-          <Button variant="primary" onClick={onOpenQuests} className="!px-3 !py-2 text-xs">
-            📜 Quests
+          <Button variant="primary" onClick={onOpenMenu} className="!px-3 !py-2 text-xs">
+            ☰ Menu
           </Button>
-          <Button onClick={onOpenMenu} className="!px-3 !py-2 text-xs">
+          <Button onClick={onOpenPack} className="!px-3 !py-2 text-xs">
             🎒 Pack
           </Button>
         </div>

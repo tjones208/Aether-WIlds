@@ -1,7 +1,7 @@
 "use client";
 
 import { CLASSES } from "./content";
-import type { Player } from "./types";
+import type { Character, Player } from "./types";
 
 export function Bar({
   value,
@@ -69,27 +69,77 @@ export function Panel({ children, className = "" }: { children: React.ReactNode;
   );
 }
 
-export function StatHeader({ player }: { player: Player }) {
-  const c = CLASSES[player.classId];
+// A compact HP/MP (and optional XP) readout for one character.
+export function CharBars({ char, showXp = false }: { char: Character; showXp?: boolean }) {
   return (
-    <Panel className="!p-3">
-      <div className="flex items-center gap-3">
-        <span className="text-3xl">{c.sprite}</span>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-baseline justify-between">
-            <span className="truncate font-bold">{player.name}</span>
-            <span className="text-xs text-muted">
-              Lv {player.level} {c.name}
-            </span>
-          </div>
-          <div className="mt-1.5 flex flex-col gap-1.5">
-            <Bar value={player.hp} max={player.stats.maxHp} color="bg-gradient-to-r from-red-500 to-rose-400" label="HP" />
-            <Bar value={player.mp} max={player.stats.maxMp} color="bg-gradient-to-r from-sky-500 to-cyan-400" label="MP" />
-            <Bar value={player.xp} max={player.xpToNext} color="bg-gradient-to-r from-amber-500 to-yellow-300" label="XP" />
-          </div>
+    <div className="flex flex-col gap-1">
+      <Bar
+        value={char.hp}
+        max={char.stats.maxHp}
+        color="bg-gradient-to-r from-red-500 to-rose-400"
+        label="HP"
+      />
+      <Bar
+        value={char.mp}
+        max={char.stats.maxMp}
+        color="bg-gradient-to-r from-sky-500 to-cyan-400"
+        label="MP"
+      />
+      {showXp && (
+        <Bar
+          value={char.xp}
+          max={char.xpToNext}
+          color="bg-gradient-to-r from-amber-500 to-yellow-300"
+          label="XP"
+        />
+      )}
+    </div>
+  );
+}
+
+// One row in a party list.
+export function MemberRow({ char, active = false }: { char: Character; active?: boolean }) {
+  const down = char.hp <= 0;
+  return (
+    <div
+      className={`flex items-center gap-3 rounded-xl p-2 ring-1 transition ${
+        active ? "bg-brand/15 ring-brand" : "bg-panel2/60 ring-line"
+      } ${down ? "opacity-50" : ""}`}
+    >
+      <span className="text-2xl">{char.sprite}</span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline justify-between">
+          <span className="truncate text-sm font-bold">{char.name}</span>
+          <span className="text-[10px] text-muted">
+            {down ? "KO" : `Lv ${char.level} ${CLASSES[char.classId].name}`}
+          </span>
+        </div>
+        <div className="mt-1">
+          <CharBars char={char} />
         </div>
       </div>
-      <div className="mt-2 flex items-center justify-between text-xs text-muted">
+    </div>
+  );
+}
+
+// The whole party, optionally highlighting whose turn it is.
+export function PartyList({
+  player,
+  activeId,
+  className = "",
+}: {
+  player: Player;
+  activeId?: string | null;
+  className?: string;
+}) {
+  return (
+    <Panel className={`!p-2 ${className}`}>
+      <div className="flex flex-col gap-1.5">
+        {player.party.map((c) => (
+          <MemberRow key={c.id} char={c} active={activeId === c.id} />
+        ))}
+      </div>
+      <div className="mt-1.5 flex items-center justify-between px-1 text-[11px] text-muted">
         <span>🪙 {player.gold} Gil</span>
         <span>⚔️ {player.battlesWon} won</span>
       </div>
