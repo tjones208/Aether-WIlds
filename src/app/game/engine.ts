@@ -212,6 +212,20 @@ export function startDungeonBattle(place: Place): BattleState {
   return startBattle(place.regionIndex, { boss: true, returnTo: "world" });
 }
 
+// Position-based arrival: the smooth overworld renderer animates the walk itself
+// and calls this once the character settles onto a new tile, to resolve whatever
+// is there (a place to enter, a wild encounter, or nothing).
+export function arriveAt(player: Player, x: number, y: number): { player: Player; event: MoveEvent } {
+  const p: Player = { ...player, pos: { x, y }, steps: player.steps + 1 };
+  const place = placeAt(x, y);
+  if (place) return { player: p, event: { kind: "place", place } };
+  if (chance(encounterChance(x, y))) {
+    const region = regionForPos(p.pos);
+    return { player: p, event: { kind: "encounter", battle: startBattle(region, { returnTo: "world" }) } };
+  }
+  return { player: p, event: { kind: "moved" } };
+}
+
 // ---- Combat math ------------------------------------------------------------
 
 function effectiveDef(base: number, statuses: { kind: string; amount?: number }[]) {

@@ -1,28 +1,32 @@
-// The overworld: a tile grid you walk across, plus the towns, castle, dungeons
+// The overworld: a tile grid you roam across, plus the towns, castle, dungeons
 // and NPCs scattered over it. Regions map to the ZONES in content.ts and
-// determine which enemies you meet in the wild.
+// determine which enemies you meet in the wild. The Overworld renderer paints
+// these tiles to a canvas and walks a character smoothly across them.
 
 import type { Npc, Place, WorldPos } from "./types";
 
 // Tile legend:
-//   .  grass    (walkable, light encounters)
-//   f  forest   (walkable, heavier encounters)
-//   =  road     (walkable, safe — no encounters)
+//   .  grass     f  forest      s  sand
+//   ~  water (wadeable)          =  road (safe)
 //   M  mountain (blocked)
-//   ~  water    (blocked)
-//   T  town     C  castle    D  dungeon  (walkable — entering triggers the place)
+//   T  town      C  castle       D  dungeon   (walkable — entering triggers it)
 export const WORLD_MAP: string[] = [
-  "MMMMMMMMMMMM",
-  "M..f.D..ff.M",
-  "M..======.M",
-  "M.f=~~=.ff.M",
-  "M.==T==.D..M",
-  "Mf=...==...M",
-  "M.=..==....M",
-  "M.==...=...M",
-  "M.=C=T=....M",
-  "Mf=...=.D..M",
-  "MMMMMMMMMMMM",
+  "MMMMMMMMMMMMMMMMMMMM",
+  "M....f....D...ff...M",
+  "M..ff..======..f..M",
+  "M...f..=....=......M",
+  "M..s~~=.ff..=..MM..M",
+  "M..s~~=....=.T=.M..M",
+  "M...s=.ff.==.==....M",
+  "M..===...D....=....M",
+  "M.f=..ff....==.f...M",
+  "M..=.....~~~...s...M",
+  "M..==...~~~~..ss...M",
+  "M...==.s~~~..ss....M",
+  "M.ff.===.s..==.....M",
+  "M....C===T===D.ff..M",
+  "M...f...===...f....M",
+  "MMMMMMMMMMMMMMMMMMMM",
 ];
 
 export const MAP_W = WORLD_MAP[0].length;
@@ -33,47 +37,42 @@ export function tileAt(x: number, y: number): string {
   return WORLD_MAP[y][x];
 }
 
+// Only mountains truly block you — water can be waded through.
 export function isWalkable(x: number, y: number): boolean {
-  const t = tileAt(x, y);
-  return t !== "M" && t !== "~";
+  return tileAt(x, y) !== "M";
 }
 
 // Northern rows are deadlier. Region index feeds ZONES (0 = meadow … 2 = spire).
 export function regionForPos(pos: WorldPos): number {
-  if (pos.y >= 7) return 0; // meadow (south, home)
-  if (pos.y >= 4) return 1; // ashen hollow (middle)
+  if (pos.y >= 11) return 0; // meadow (south, home)
+  if (pos.y >= 5) return 1; // ashen hollow (middle)
   return 2; // frostspire (north)
 }
 
 // Encounter probability per step for the tile you land on.
 export function encounterChance(x: number, y: number): number {
-  const t = tileAt(x, y);
-  if (t === "f") return 0.22;
-  if (t === ".") return 0.12;
-  return 0; // roads, towns, etc. are safe
+  switch (tileAt(x, y)) {
+    case "f":
+      return 0.18;
+    case ".":
+      return 0.1;
+    case "s":
+      return 0.06;
+    case "~":
+      return 0.05;
+    default:
+      return 0; // roads, towns, dungeons, mountains
+  }
 }
 
-export const PLAYER_SPRITE = "🧝";
-
-export const TERRAIN_SPRITE: Record<string, string> = {
-  ".": "🌿",
-  f: "🌲",
-  "=": "🟫",
-  M: "⛰️",
-  "~": "🌊",
-  T: "🏘️",
-  C: "🏰",
-  D: "🕳️",
-};
-
-export const SPAWN: WorldPos = { x: 5, y: 7 }; // just outside Rivenholde
+export const SPAWN: WorldPos = { x: 9, y: 12 }; // just north of Rivenholde
 
 export const PLACES: Place[] = [
   {
     id: "rivenholde",
     name: "Rivenholde",
     kind: "town",
-    pos: { x: 5, y: 8 },
+    pos: { x: 9, y: 13 },
     regionIndex: 0,
     npcs: ["merchant", "innkeeper", "hunter"],
     intro: "The bells of Rivenholde, last free town of the southern meadow.",
@@ -82,7 +81,7 @@ export const PLACES: Place[] = [
     id: "aurelis",
     name: "Castle Aurelis",
     kind: "castle",
-    pos: { x: 3, y: 8 },
+    pos: { x: 5, y: 13 },
     regionIndex: 0,
     npcs: ["king", "sage"],
     intro: "Banners hang low over Castle Aurelis. The court is uneasy.",
@@ -91,7 +90,7 @@ export const PLACES: Place[] = [
     id: "emberton",
     name: "Emberton",
     kind: "town",
-    pos: { x: 4, y: 4 },
+    pos: { x: 12, y: 5 },
     regionIndex: 1,
     npcs: ["smith", "wanderer"],
     intro: "Emberton clings to the edge of the Ashen Hollow, smoke on the wind.",
@@ -100,7 +99,7 @@ export const PLACES: Place[] = [
     id: "meadow_dungeon",
     name: "Slimewarren Burrow",
     kind: "dungeon",
-    pos: { x: 8, y: 9 },
+    pos: { x: 13, y: 13 },
     regionIndex: 0,
     bossId: "boss_grumble",
     intro: "A damp burrow that reeks of ooze. Something huge shifts within.",
@@ -109,7 +108,7 @@ export const PLACES: Place[] = [
     id: "hollow_dungeon",
     name: "Emberfang Den",
     kind: "dungeon",
-    pos: { x: 8, y: 4 },
+    pos: { x: 9, y: 7 },
     regionIndex: 1,
     bossId: "boss_fang",
     requiresBoss: "boss_grumble",
@@ -119,7 +118,7 @@ export const PLACES: Place[] = [
     id: "spire_dungeon",
     name: "Frostspire Summit",
     kind: "dungeon",
-    pos: { x: 5, y: 1 },
+    pos: { x: 10, y: 1 },
     regionIndex: 2,
     bossId: "boss_pyre",
     requiresBoss: "boss_fang",

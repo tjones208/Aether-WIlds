@@ -9,9 +9,9 @@ import {
   checkBattleEnd,
   createPlayer,
   dungeonBlockedReason,
+  arriveAt,
   enemyIsFaster,
   enemyTurn,
-  move,
   npcQuestState,
   playerAttack,
   playerDefend,
@@ -26,7 +26,7 @@ import {
 } from "./engine";
 import { getPlace, npcsAt } from "./world";
 import { clearSave, hasSave, loadGame, saveGame } from "./save";
-import type { BattleState, ClassId, Dir, ItemId, Npc, Place, Player, Screen } from "./types";
+import type { BattleState, ClassId, ItemId, Npc, Place, Player, Screen } from "./types";
 import { Bar, Button, Panel, StatHeader } from "./ui";
 import Overworld from "./Overworld";
 import QuestLog from "./QuestLog";
@@ -87,34 +87,35 @@ export default function RPGGame() {
 
   // ---- Overworld ------------------------------------------------------------
 
-  const handleMove = (dir: Dir) => {
-    if (!player) return;
-    const { player: np, event } = move(player, dir);
-    if (event.kind === "blocked") return;
+  // Called by the overworld once the hero settles onto a tile. Returns true when
+  // it changes screens (encounter / entering a place) so movement stops.
+  const handleArrive = (x: number, y: number): boolean => {
+    if (!player) return true;
+    const { player: np, event } = arriveAt(player, x, y);
     setPlayer(np);
-    if (event.kind === "moved") return;
+    if (event.kind === "moved") return false;
     if (event.kind === "encounter") {
       setBattle(event.battle);
       setScreen("battle");
-      return;
+      return true;
     }
-    if (event.kind === "place") {
-      const pl = event.place;
-      if (pl.kind === "dungeon") {
-        const reason = dungeonBlockedReason(np, pl);
-        if (reason) {
-          flash(`🕳️ ${pl.name}: ${reason}`);
-          return;
-        }
-        setPlayer(recordVisit(np, pl.id));
-        setBattle(startDungeonBattle(pl));
-        setScreen("battle");
-      } else {
-        setPlayer(recordVisit(np, pl.id));
-        setPlaceState(pl);
-        setScreen("town");
+    if (event.kind !== "place") return false;
+    const pl = event.place;
+    if (pl.kind === "dungeon") {
+      const reason = dungeonBlockedReason(np, pl);
+      if (reason) {
+        flash(`🕳️ ${pl.name}: ${reason}`);
+        return false; // stay on the map; you can keep walking
       }
+      setPlayer(recordVisit(np, pl.id));
+      setBattle(startDungeonBattle(pl));
+      setScreen("battle");
+      return true;
     }
+    setPlayer(recordVisit(np, pl.id));
+    setPlaceState(pl);
+    setScreen("town");
+    return true;
   };
 
   const openQuests = (from: Screen) => {
@@ -320,7 +321,7 @@ export default function RPGGame() {
       {screen === "world" && player && (
         <Overworld
           player={player}
-          onMove={handleMove}
+          onArrive={handleArrive}
           onOpenQuests={() => openQuests("world")}
           onOpenMenu={() => setShowItems(true)}
         />
